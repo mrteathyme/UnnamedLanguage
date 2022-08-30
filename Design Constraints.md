@@ -1,5 +1,5 @@
 # Paradigm
-Multi-paradigm
+Like all the cool kids i want Multi-paradigm so i can write shitty code in x<sup>n</sup> ways
 
 # Syntax rules
 - Modified form of pythonic, some "rules" such as functions should start lower case and classes should start Uppercase are not enforced in standard pythonic for example, enforcing those rules should result in more readable code
