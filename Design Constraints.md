@@ -20,9 +20,9 @@ Multi-paradigm
     This can also be interpreted as : being a typing/casting operator (though at this stage in design (30/08/2022) this is not yet decided in design and is merely an inference)
 
 - primitive data types
-    Arbitrary Precision Arithmetic: integer/i float/f
-    Fixed Precision Arithmetic: integerBits/iBits, floatBits/fBits e.g integer32, i32, float32, f32
-    Boolean: True, False, maybe?(Im wary of adding ternary logic on the basis that I would like to avoid "maybe ill need this in the future" design and as of right now i cant think of any practical use cases for ternary logic)
+    - Arbitrary Precision Arithmetic: integer/i float/f
+    - Fixed Precision Arithmetic: integerBits/iBits, floatBits/fBits e.g integer32, i32, float32, f32
+    - Boolean: True, False, maybe?(Im wary of adding ternary logic on the basis that I would like to avoid "maybe ill need this in the future" design and as of right now i cant think of any practical use cases for ternary logic)
 
 
 - Standard Compiler should be multi-mode, defaulting to interpreter behaviour for the sake of rapid prototyping with compilation to binary simply being an execution flag (I know i know... compilers arent technically defined by the language ala C++ and jit compilation, but they have a non-zero impact on the design of a language, e.g interpreted languages tend to be dynamically typed (be it weak or strong) among other things, this is ironically the reason I want there to be seemless support for static and dynamic typing along with fixed and arbitrary precision arithmetic)
