@@ -1,1 +1,29 @@
-foo: int32 = 1
+# : operator indicates that the preceeding identifier will be statically typed, in the case of variable identifiers it indicates the type of the variable, in the case of functions it indicates thee return type of the function
+
+
+@using std
+foo: Int32 = 1 # Declare variable foo under the std namespace with type integer 32 bit and value of 1
+
+someSpace: MemorySpace # Declare a memory space named someSpace (Im still toying around with this idea, but I effectively want a way to encapsulate scope during runtime, namespaces dont work because theyre compile time, and classes dont work because they are different in implementation, you can think of a memoryspace like a user defined Global() or Local(), or like putting ({}) in your code to isolate scope, but having it accessible elsewhere, not sold on the name either) 
+someSpace::foo: Int32 = 2 # Declare variable foo under the someSpace memory space with type integer 32 bit and value of 1
+bar: string = 'foo' # Declare variable bar under the global namespace with type string and value of 'foo'
+assert someSpace::[bar] == 2 # Access the someSpace memory space variable with name equal to the value of global namespace variable bar (my solution for reflection) and assert its value is 1 // TODO: Add parameter to namespaces to enable and disable reflection on a per namespace basis to maintain "you do not pay for what you dont use" might move this functionality to memory spaces instead, not completely sold on that though
+
+
+print('hello world')
+print(f'{string(foo)}')
+
+func someFunction: -> Int32 # Define a function named someFunction with two integer 32 bit parameters, with a return type of integer 32 bit
+(a: Int32, b: Int32)        # Parameters are defined within brackets following a newline character, because holyshit people cannot stay in col80 for the life of them
+    return a+b
+
+
+class SomeClass: # Define a class by the name of SomeClass
+    @private
+    func _init_
+    (self) 
+        self.foo: Int32 = 1 # Declare variable foo under the SomeClass namespace 
+
+
+
+

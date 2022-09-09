@@ -1,12 +1,16 @@
-TT_INT = 'TT_INT'
-TT_FLOAT = 'TT_FLOAT'
-TT_PLUS = 'TT_PLUS'
-TT_MINUS = 'TT_MINUS'
-TT_MUL = 'TT_MUL'
-TT_DIV = 'TT_DIV'
-TT_LPAREN = 'TT_LPAREN'
-TT_RPAREN = 'TT_RPAREN'
-
+KEYWORDS = 'int32'
+TT_INT = 'INT'
+TT_FLOAT = 'FLOAT'
+TT_PLUS = 'PLUS'
+TT_MINUS = 'MINUS'
+TT_MUL = 'MUL'
+TT_DIV = 'DIV'
+TT_LPAREN = 'LPAREN'
+TT_RPAREN = 'RPAREN'
+TT_IDENTIFIER = 'IDENTIFIER'
+TT_KEYWORD = 'KEYWORD'
+TT_EQUALS = 'EQUALS'
+TT_EOF = 'EOF'
 class Position:
     def __init__(self, idx, ln, col, fn, ftxt):
         self.idx = idx
@@ -67,6 +71,7 @@ class Lexer:
         tokens = []
         
         while self.current_char != None:
+            '''
             match self.current_char:
                 case '0' |'1' | '2' | '3' |'4' | '5' | '6' |'7' | '8' | '9':
                     tokens.append(self.make_number())
@@ -95,7 +100,54 @@ class Lexer:
                     char = self.current_char
                     self.advance()
                     return [], IllegalCharError(pos_start, self.pos,char)
+            '''
+            if self.current_char in '0123456789':
+                tokens.append(self.make_number())
+            elif self.current_char in ' \t':
+                self.advance()
+            elif self.current_char in '+':
+                    tokens.append(Token(TT_PLUS))
+                    self.advance()
+            elif self.current_char in '-':
+                tokens.append(Token(TT_MINUS))
+                self.advance()
+            elif self.current_char in '*':
+                    tokens.append(Token(TT_MUL))
+                    self.advance()
+            elif self.current_char in '/':
+                    tokens.append(Token(TT_DIV))
+                    self.advance()
+            elif self.current_char in '(':
+                    tokens.append(Token(TT_LPAREN))
+                    self.advance()
+            elif self.current_char in ')':
+                    tokens.append(Token(TT_RPAREN))
+                    self.advance()
+            elif self.current_char in 'abcdefghijklmnopqrstuvwxyz':
+                tokens.append(self.make_identifier())
+            #elif self.current_char in
+            #elif self.current_char in
+            #elif self.current_char in
+            else:
+                pos_start = self.pos.copy()
+                char = self.current_char
+                self.advance()
+                return [], IllegalCharError(pos_start, self.pos,char)
         return tokens, None
+
+    def make_identifier(self):
+        id_str = ""
+        pos_start = self.pos.copy()
+
+        while self.current_char != None and self.current_char in 'abcdefghijklmnopqrstuvwxyz' + '0123456789' + '_':
+            id_str += self.current_char
+            self.advance()
+
+        tok_type = TT_KEYWORD if id_str in KEYWORDS else TT_IDENTIFIER
+        return Token(tok_type, id_str)#, pos_start, self.pos)
+
+
+
 
     def make_number(self):
         num_str = ''
