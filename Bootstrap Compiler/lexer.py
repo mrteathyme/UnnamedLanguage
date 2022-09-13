@@ -1,16 +1,20 @@
-KEYWORDS = 'int32'
+import string
+
+
 TT_INT = 'INT'
 TT_FLOAT = 'FLOAT'
-TT_PLUS = 'PLUS'
-TT_MINUS = 'MINUS'
-TT_MUL = 'MUL'
-TT_DIV = 'DIV'
 TT_LPAREN = 'LPAREN'
 TT_RPAREN = 'RPAREN'
 TT_IDENTIFIER = 'IDENTIFIER'
 TT_KEYWORD = 'KEYWORD'
-TT_EQUALS = 'EQUALS'
 TT_EOF = 'EOF'
+TT_STRING = 'STRING'
+TT_OPERATOR = 'OPERATOR'
+TT_COMMA = 'COMMA'
+TT_INDENTS ='INDENTS'
+
+OPERATOR_COMPONENTS = '+=-<>:!/'
+KEYWORDS = ['Int32', 'exit', 'return', 'print', 'func', 'class']
 class Position:
     def __init__(self, idx, ln, col, fn, ftxt):
         self.idx = idx
@@ -52,7 +56,7 @@ class Token:
         self.value = value
 
     def __repr__(self):
-        if self.value: return f'{self.type}:{self.value}'
+        if self.value is not None: return f'{self.type}:{self.value}'
         return f'{self.type}'
 
 class Lexer:
@@ -69,65 +73,27 @@ class Lexer:
 
     def make_tokens(self):
         tokens = []
-        
+        tokens.append(Token(TT_INDENTS,max(len(self.text) - len(self.text.lstrip()),0)))
         while self.current_char != None:
-            '''
-            match self.current_char:
-                case '0' |'1' | '2' | '3' |'4' | '5' | '6' |'7' | '8' | '9':
-                    tokens.append(self.make_number())
-                case ' ' | '/t':
-                    self.advance()
-                case '+':
-                    tokens.append(Token(TT_PLUS))
-                    self.advance()
-                case '-':
-                    tokens.append(Token(TT_MINUS))
-                    self.advance()
-                case '*':
-                    tokens.append(Token(TT_MUL))
-                    self.advance()
-                case '/':
-                    tokens.append(Token(TT_DIV))
-                    self.advance()
-                case '(':
-                    tokens.append(Token(TT_LPAREN))
-                    self.advance()
-                case ')':
-                    tokens.append(Token(TT_RPAREN))
-                    self.advance()
-                case _:
-                    pos_start = self.pos.copy()
-                    char = self.current_char
-                    self.advance()
-                    return [], IllegalCharError(pos_start, self.pos,char)
-            '''
             if self.current_char in '0123456789':
                 tokens.append(self.make_number())
-            elif self.current_char in ' \t':
+            elif self.current_char in OPERATOR_COMPONENTS:
+                tokens.append(self.make_operator())
+            elif self.current_char in string.ascii_letters:
+                tokens.append(self.make_identifier())
+            elif self.current_char in '\'\"':
+                tokens.append(self.make_string())
+            elif self.current_char in ' \t': # We count indents with an lstrip comparison before the loop so we dont actually want to count whitespaces
                 self.advance()
-            elif self.current_char in '+':
-                    tokens.append(Token(TT_PLUS))
-                    self.advance()
-            elif self.current_char in '-':
-                tokens.append(Token(TT_MINUS))
-                self.advance()
-            elif self.current_char in '*':
-                    tokens.append(Token(TT_MUL))
-                    self.advance()
-            elif self.current_char in '/':
-                    tokens.append(Token(TT_DIV))
-                    self.advance()
             elif self.current_char in '(':
                     tokens.append(Token(TT_LPAREN))
                     self.advance()
             elif self.current_char in ')':
                     tokens.append(Token(TT_RPAREN))
                     self.advance()
-            elif self.current_char in 'abcdefghijklmnopqrstuvwxyz':
-                tokens.append(self.make_identifier())
-            #elif self.current_char in
-            #elif self.current_char in
-            #elif self.current_char in
+            elif self.current_char in ',':
+                tokens.append(Token(TT_COMMA))
+                self.advance()
             else:
                 pos_start = self.pos.copy()
                 char = self.current_char
@@ -135,11 +101,42 @@ class Lexer:
                 return [], IllegalCharError(pos_start, self.pos,char)
         return tokens, None
 
+    def make_operator(self):
+        operator = ''
+        pos_start = self.pos.copy()
+        while self.current_char != None and self.current_char in OPERATOR_COMPONENTS:
+            operator += self.current_char
+            self.advance()
+        return Token(TT_OPERATOR, operator)#, pos_start, self.pos)
+
+    def make_string(self):
+        string = ''
+        pos_start = self.pos.copy()
+        escape_character = False
+        self.advance()
+
+        escape_characters = {
+            'n':'\n',
+            't':'\t'
+            }
+
+        while self.current_char != None and self.current_char not in '\'\"' or escape_character == True:
+            if escape_character:
+                escape_character = False
+                string += escape_characters[self.current_char]
+            else:
+                if self.current_char == '\\':
+                    escape_character = True
+                else:
+                    string += self.current_char
+            self.advance()
+        self.advance()
+        return Token(TT_STRING, string)#, pos_start, self.pos)
     def make_identifier(self):
         id_str = ""
         pos_start = self.pos.copy()
 
-        while self.current_char != None and self.current_char in 'abcdefghijklmnopqrstuvwxyz' + '0123456789' + '_':
+        while self.current_char != None and self.current_char in string.ascii_letters + '0123456789' + '_':
             id_str += self.current_char
             self.advance()
 
