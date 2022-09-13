@@ -1,3 +1,5 @@
+from ast import Expression
+from lib2to3.pgen2.token import tok_name
 import string
 
 
@@ -5,6 +7,8 @@ TT_INT = 'INT'
 TT_FLOAT = 'FLOAT'
 TT_LPAREN = 'LPAREN'
 TT_RPAREN = 'RPAREN'
+TT_LSPAREN = 'LSPAREN'
+TT_RSPAREN = 'RSPAREN'
 TT_IDENTIFIER = 'IDENTIFIER'
 TT_KEYWORD = 'KEYWORD'
 TT_EOF = 'EOF'
@@ -12,9 +16,16 @@ TT_STRING = 'STRING'
 TT_OPERATOR = 'OPERATOR'
 TT_COMMA = 'COMMA'
 TT_INDENTS ='INDENTS'
-
-OPERATOR_COMPONENTS = '+=-<>:!/'
-KEYWORDS = ['Int32', 'exit', 'return', 'print', 'func', 'class']
+TT_BOOLEAN = 'BOOLEAN'
+OPERATOR_COMPONENTS = '+=-<>:!/.*'
+OPERATORS = {
+    '+': 'PLUS',
+    '==': 'EQUALTO',
+    '-': 'MINUS',
+    '*': 'MUL',
+    '/': 'DIV'}
+KEYWORDS = ['Int32', 'exit', 'return', 'print', 'func', 'class', 'while', 'for', 'if', 'else', 'import', 'with', 'File', 'open', 'input', 'in','strip']
+BOOLEAN_KEYWORDS = ['True', 'False']
 class Position:
     def __init__(self, idx, ln, col, fn, ftxt):
         self.idx = idx
@@ -50,14 +61,22 @@ class IllegalCharError(Error):
     def __init__(self,  pos_start, pos_end,details):
         super().__init__( pos_start, pos_end,'Illegal Character', details)
 
+class IllegalOperatorError(Error):
+    def __init__(self,  pos_start, pos_end,details):
+        super().__init__( pos_start, pos_end,'Illegal Operator', details)
+
+class InvalidSyntaxError(Error):
+    def __init__(self,  pos_start, pos_end,details):
+        super().__init__( pos_start, pos_end,'Illegal Syntax', details)
+
 class Token:
     def __init__(self, type_, value=None):
         self.type = type_
         self.value = value
 
     def __repr__(self):
-        if self.value is not None: return f'{self.type}:{self.value}'
-        return f'{self.type}'
+        if self.value is not None: return f'"{self.type}":"{self.value}"'
+        return f'"{self.type}"'
 
 class Lexer:
     def __init__(self, fn, text):
@@ -91,6 +110,12 @@ class Lexer:
             elif self.current_char in ')':
                     tokens.append(Token(TT_RPAREN))
                     self.advance()
+            elif self.current_char in '[':
+                    tokens.append(Token(TT_LSPAREN))
+                    self.advance()
+            elif self.current_char in ']':
+                    tokens.append(Token(TT_RSPAREN))
+                    self.advance()
             elif self.current_char in ',':
                 tokens.append(Token(TT_COMMA))
                 self.advance()
@@ -107,7 +132,9 @@ class Lexer:
         while self.current_char != None and self.current_char in OPERATOR_COMPONENTS:
             operator += self.current_char
             self.advance()
-        return Token(TT_OPERATOR, operator)#, pos_start, self.pos)
+        if operator not in OPERATORS:
+            return [], IllegalOperatorError(pos_start, self.pos, operator)
+        return Token(OPERATORS[operator])#, pos_start, self.pos)
 
     def make_string(self):
         string = ''
@@ -140,7 +167,7 @@ class Lexer:
             id_str += self.current_char
             self.advance()
 
-        tok_type = TT_KEYWORD if id_str in KEYWORDS else TT_IDENTIFIER
+        tok_type = TT_KEYWORD if id_str in KEYWORDS else TT_BOOLEAN if id_str in BOOLEAN_KEYWORDS else TT_IDENTIFIER
         return Token(tok_type, id_str)#, pos_start, self.pos)
 
 
@@ -162,8 +189,98 @@ class Lexer:
         else:
             return Token(TT_FLOAT, float(num_str))
 
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.tok_idx = 0
+        self.current_tok = None
+        self.advance()
+        
+
+    def advance(self):
+        self.tok_idx += 1
+        if self.tok_idx < len(self.tokens):
+            self.current_tok = self.tokens[self.tok_idx]
+        return self.current_tok
+
+    def parse(self):
+        res = self.expression()
+        return res, res.value if res else res, None
+
+    def factor(self):
+        tok = self.current_tok
+
+        if tok.type in(OPERATORS['+'], OPERATORS['-']):
+            self.advance()
+            factor = self.factor()
+            return UnaryOpNode(tok, factor)
+        
+        if tok.type == TT_LPAREN:
+            self.advance()
+            expression = self.expression()
+            if self.current_tok.type == TT_RPAREN:
+                self.advance()
+                return expression
+            else:
+                InvalidSyntaxError(0, 0, "Expected ')'")
+
+        elif tok.type in (TT_INT, TT_FLOAT):
+            self.advance()
+            return NumberNode(tok)
+    
+    def term(self):
+        return self.bin_op(self.factor, (OPERATORS['*'], OPERATORS['/']))
+
+    def expression(self):
+        return self.bin_op(self.term, (OPERATORS['+'], OPERATORS['-']))
+
+
+    def bin_op(self, func, ops):
+        left = func()
+        while self.current_tok.type in ops:
+            op_tok = self.current_tok
+            self.advance()
+            right = func()
+            left = BinOpNode(left, op_tok, right)
+        return left
+class NumberNode:
+    def __init__(self, tok):
+        self.tok = tok
+
+    def __repr__(self):
+        return f'{self.tok}'
+
+    @property
+    def value(self):
+        return self.tok
+
+class BinOpNode:
+    def __init__(self, left_node, op_tok, right_node):
+        self.left_node = left_node
+        self.op_tok = op_tok
+        self.right_node = right_node
+    
+    def __repr__(self):
+        return f'({self.left_node}, {self.op_tok}, {self.right_node})'
+    
+    @property
+    def value(self):
+        return [self.left_node, [self.op_tok, self.right_node]]
+
+class UnaryOpNode:
+    def __init__(self, op_tok, node):
+        self.op_tok = op_tok
+        self.node = node
+    
+    def __repr__(self):
+        return f'({self.op_tok}, {self.node})'
+    
+    @property
+    def value(self):
+        return [self.op_tok, self.node]
+
 def run(fn,text):
     lexer = Lexer(fn,text)
     tokens, error = lexer.make_tokens()
-
-    return tokens, error
+    parser = Parser(tokens)
+    return tokens, error, parser.parse()
