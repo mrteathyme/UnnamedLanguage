@@ -17,6 +17,7 @@ TT_OPERATOR = 'OPERATOR'
 TT_COMMA = 'COMMA'
 TT_INDENTS ='INDENTS'
 TT_BOOLEAN = 'BOOLEAN'
+TT_NEWLINE = 'NEWLINE'
 OPERATOR_COMPONENTS = '+=-<>:!/.*'
 OPERATORS = {
     '+': 'PLUS',
@@ -119,11 +120,15 @@ class Lexer:
             elif self.current_char in ',':
                 tokens.append(Token(TT_COMMA))
                 self.advance()
+            elif self.current_char in '\n':
+                tokens.append(Token(TT_NEWLINE))
+                self.advance()
             else:
                 pos_start = self.pos.copy()
                 char = self.current_char
                 self.advance()
                 return [], IllegalCharError(pos_start, self.pos,char)
+        tokens.append(Token(TT_EOF))#, pos_start=self.pos))
         return tokens, None
 
     def make_operator(self):

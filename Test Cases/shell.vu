@@ -2,9 +2,8 @@ import lexer
 
 while True
     with file: File = open(input())
-        for line in file
-            result, error = lexer.run('<stdin>',strip(line)[0])
-            if error
-                print(error.as_string())
-            else
-                print(result)
+        result, error = lexer.run('<stdin>',file.read())
+        if error
+            print(error.as_string())
+        else
+            print(result)
