@@ -18,7 +18,7 @@ func someFunction: -> Int32 # Define a function named someFunction with two inte
     return a+b
 
 
-class SomeClass: # Define a class by the name of SomeClass
+class SomeClass # Define a class by the name of SomeClass
     @private
     func _init_
     (self) 
